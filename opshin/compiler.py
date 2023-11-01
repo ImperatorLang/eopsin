@@ -3,6 +3,7 @@ from pycardano import PlutusData
 
 from uplc.ast import data_from_cbor
 from .optimize.optimize_const_folding import OptimizeConstantFolding
+from .optimize.optimize_inline_constvars import OptimizeInlineConstvars
 from .optimize.optimize_remove_comments import OptimizeRemoveDeadconstants
 from .rewrite.rewrite_augassign import RewriteAugAssign
 from .rewrite.rewrite_cast_condition import RewriteConditions
@@ -1053,6 +1054,7 @@ def compile(
         OptimizeVarlen(),
         OptimizeRemoveDeadconstants(),
         OptimizeRemovePass(),
+        OptimizeInlineConstvars(),
     ]
     for s in compile_pipeline:
         prog = s.visit(prog)

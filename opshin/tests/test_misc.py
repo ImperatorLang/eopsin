@@ -2211,3 +2211,33 @@ def validator(
                 capture_output=True,
             )
             self.assertEqual(code.stdout, code_2.stdout)
+
+    def test_optimize_const_inline(self):
+        # TODO can we ensure here that the inline optimization is actually performed?
+        source_code = """
+def validator(
+    d: int
+):
+    x = d
+    y = x
+    z = y
+    w = z
+    return w
+"""
+        res = eval_uplc_value(source_code, 1)
+        self.assertEqual(res, 1)
+
+    def test_optimize_const_inline_complex(self):
+        # TODO can we ensure here that the inline optimization is actually performed?
+        source_code = """
+def validator(
+    d: int
+):
+    x = d + 4
+    y = x - 1
+    z = 2 * y
+    w = 23 % z
+    return w
+"""
+        res = eval_uplc_value(source_code, 1)
+        self.assertEqual(res, (23 % (2 * ((1 + 4) - 1))))

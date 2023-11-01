@@ -1,34 +1,13 @@
 from ast import *
 from copy import copy
-from collections import defaultdict
 
-from ..util import CompilingNodeVisitor, CompilingNodeTransformer
+from ..util import CompilingNodeVisitor, CompilingNodeTransformer, NameLoadCollector
 from ..type_inference import INITIAL_SCOPE
 from ..typed_ast import TypedAnnAssign
 
 """
 Removes assignments to variables that are never read
 """
-
-
-class NameLoadCollector(CompilingNodeVisitor):
-    step = "Collecting used variables"
-
-    def __init__(self):
-        self.loaded = defaultdict(int)
-
-    def visit_Name(self, node: Name) -> None:
-        if isinstance(node.ctx, Load):
-            self.loaded[node.id] += 1
-
-    def visit_ClassDef(self, node: ClassDef):
-        # ignore the content (i.e. attribute names) of class definitions
-        pass
-
-    def visit_FunctionDef(self, node: FunctionDef):
-        # ignore the type hints of function arguments
-        for s in node.body:
-            self.visit(s)
 
 
 class SafeOperationVisitor(CompilingNodeVisitor):

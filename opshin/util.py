@@ -1,3 +1,17 @@
+from collections import defaultdict
+
+from _ast import (
+    Name,
+    Store,
+    ClassDef,
+    FunctionDef,
+    For,
+    While,
+    If,
+    Import,
+    ImportFrom,
+    Load,
+)
 import typing
 
 import ast
@@ -167,3 +181,96 @@ def patternize(method):
         return make_pattern(method(*args, **kwargs))
 
     return wrapped
+
+
+class ShallowNameDefCollector(CompilingNodeVisitor):
+    step = "Collecting occuring variable names"
+
+    def __init__(self):
+        self.vars = set()
+
+    def visit_Name(self, node: Name) -> None:
+        if isinstance(node.ctx, Store):
+            self.vars.add(node.id)
+
+    def visit_ClassDef(self, node: ClassDef):
+        self.vars.add(node.name)
+        # ignore the content (i.e. attribute names) of class definitions
+
+    def visit_FunctionDef(self, node: FunctionDef):
+        self.vars.add(node.name)
+        # ignore the recursive stuff
+
+
+class DefinedTimesVisitor(CompilingNodeVisitor):
+    step = "Collecting how often variables are written"
+
+    def __init__(self):
+        self.vars = defaultdict(int)
+
+    def visit_For(self, node: For) -> None:
+        # visit twice to have all names bumped to min 2 assignments
+        self.generic_visit(node)
+        self.generic_visit(node)
+        return
+        # TODO future items: use this together with guaranteed available
+        # visit twice to have this name bumped to min 2 assignments
+        self.visit(node.target)
+        # visit the whole function
+        self.generic_visit(node)
+
+    def visit_While(self, node: While) -> None:
+        # visit twice to have all names bumped to min 2 assignments
+        self.generic_visit(node)
+        self.generic_visit(node)
+        return
+        # TODO future items: use this together with guaranteed available
+
+    def visit_If(self, node: If) -> None:
+        # TODO future items: use this together with guaranteed available
+        # visit twice to have all names bumped to min 2 assignments
+        self.generic_visit(node)
+        self.generic_visit(node)
+
+    def visit_Name(self, node: Name) -> None:
+        if isinstance(node.ctx, Store):
+            self.vars[node.id] += 1
+
+    def visit_ClassDef(self, node: ClassDef):
+        self.vars[node.name] += 1
+        # ignore the content (i.e. attribute names) of class definitions
+
+    def visit_FunctionDef(self, node: FunctionDef):
+        self.vars[node.name] += 1
+        # visit arguments twice, they are generally assigned more than once
+        for arg in node.args.args:
+            self.vars[arg.arg] += 2
+        self.generic_visit(node)
+
+    def visit_Import(self, node: Import):
+        for n in node.names:
+            self.vars[n] += 1
+
+    def visit_ImportFrom(self, node: ImportFrom):
+        for n in node.names:
+            self.vars[n] += 1
+
+
+class NameLoadCollector(CompilingNodeVisitor):
+    step = "Collecting used variables"
+
+    def __init__(self):
+        self.loaded = defaultdict(int)
+
+    def visit_Name(self, node: Name) -> None:
+        if isinstance(node.ctx, Load):
+            self.loaded[node.id] += 1
+
+    def visit_ClassDef(self, node: ClassDef):
+        # ignore the content (i.e. attribute names) of class definitions
+        pass
+
+    def visit_FunctionDef(self, node: FunctionDef):
+        # ignore the type hints of function arguments
+        for s in node.body:
+            self.visit(s)
