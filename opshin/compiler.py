@@ -21,6 +21,7 @@ from .rewrite.rewrite_import_typing import RewriteImportTyping
 from .rewrite.rewrite_import_uplc_builtins import RewriteImportUPLCBuiltins
 from .rewrite.rewrite_inject_builtins import RewriteInjectBuiltins
 from .rewrite.rewrite_inject_builtin_constr import RewriteInjectBuiltinsConstr
+from .rewrite.rewrite_notin import RewriteNotIn
 from .rewrite.rewrite_orig_name import RewriteOrigName
 from .rewrite.rewrite_remove_type_stuff import RewriteRemoveTypeStuff
 from .rewrite.rewrite_scoping import RewriteScoping
@@ -1078,6 +1079,7 @@ def compile(
         RewriteAugAssign(),
         RewriteComparisonChaining(),
         RewriteTupleAssign(),
+        RewriteNotIn(),
         RewriteImportIntegrityCheck(),
         RewriteImportPlutusData(),
         RewriteImportHashlib(),
