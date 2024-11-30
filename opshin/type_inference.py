@@ -1128,6 +1128,22 @@ class AggressiveTypeInferencer(CompilingNodeTransformer):
     def visit_Assert(self, node: Assert) -> TypedAssert:
         ta = copy(node)
         ta.test = self.visit(node.test)
+        try:
+            warn_assert_msg = f" (see assert with message '{node.msg.values[0].value}')"
+        except AttributeError:
+            warn_assert_msg = ""
+        if isinstance(ta.test.args[0], Constant) and ta.test.args[0].value is None:
+            OPSHIN_LOGGER.warning(
+                "Asserting `None'"
+                + warn_assert_msg
+                + " is equivalent to asserting False, which always fails."
+            )
+        elif isinstance(ta.test.args[0].typ.typ, UnitType):
+            OPSHIN_LOGGER.warning(
+                "Asserting `None'"
+                + warn_assert_msg
+                + " is likely to stem from a procedure already doing internal assertions and returning `None'. Asserting this is equivalent to asserting False, which always fails (likely unintended)."
+            )
         assert (
             ta.test.typ == BoolInstanceType
         ), "Assertions must result in a boolean type"
